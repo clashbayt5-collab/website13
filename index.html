@@ -320,8 +320,8 @@
 
     /* Форма записи */
     .booking__lead { color: var(--brown-soft); margin: 0 0 28px; font-size: 15px; line-height: 1.6; }
-    .booking fieldset { border: 0; margin: 0; padding: 0; }
-    .booking legend, .field > span {
+    .booking fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+    .booking legend, .field > span, .slots__label {
       display: block; padding: 0; margin-bottom: 10px;
       font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--brown-soft);
     }
@@ -342,6 +342,39 @@
     .booking__total { display: flex; justify-content: space-between; align-items: baseline; margin: 16px 0 28px; }
     .booking__total span { font-size: 14px; color: var(--brown-soft); }
     .booking__total b { font: 400 28px var(--serif); font-feature-settings: "lnum" 1; }
+    /* Выбор даты и свободного времени */
+    .booking .slots { margin-bottom: 26px; }
+    .slots__label { margin-top: 0; }
+    .days {
+      display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+      padding: 2px 2px 6px; margin: 0 -2px 18px; scroll-snap-type: x proximity;
+    }
+    .days::-webkit-scrollbar { display: none; }
+    .day {
+      flex: none; width: 66px; padding: 10px 0 9px; scroll-snap-align: start;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      border: 1px solid rgba(74, 53, 41, .16); border-radius: 18px;
+      background: rgba(255, 255, 255, .6); color: var(--brown-soft);
+      font: 300 12px/1.3 var(--sans); cursor: pointer;
+      transition: background .4s var(--ease), border-color .4s var(--ease);
+    }
+    .day b { font: 400 22px/1.1 var(--serif); font-feature-settings: "lnum" 1; color: var(--brown); }
+    .day:hover { background: var(--pink-soft); }
+    .times { display: flex; flex-direction: column; gap: 8px; }
+    .time {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 18px; text-align: left;
+      border: 1px solid rgba(74, 53, 41, .16); border-radius: 16px;
+      background: rgba(255, 255, 255, .6); color: var(--brown);
+      font: 300 14px var(--sans); cursor: pointer;
+      transition: background .4s var(--ease), border-color .4s var(--ease);
+    }
+    .time b { font: 400 20px var(--serif); font-feature-settings: "lnum" 1; }
+    .time span { color: var(--brown-soft); }
+    .time:hover { background: var(--pink-soft); }
+    .day[aria-pressed="true"], .time[aria-pressed="true"] { background: var(--pink); border-color: transparent; color: var(--brown); }
+    .times__empty { margin: 0; font-size: 14px; color: var(--brown-soft); }
+
     .field { display: block; margin-bottom: 16px; }
     .field input, .field textarea {
       width: 100%; padding: 13px 18px;
@@ -684,13 +717,20 @@
 
       <form class="booking" novalidate>
         <h3 id="book-title">Запись на маникюр</h3>
-        <p class="booking__lead">Отметьте процедуры и оставьте контакты — заявка уйдёт мастеру в Telegram готовым списком.</p>
+        <p class="booking__lead">Отметьте процедуры, выберите свободное время и оставьте контакты — заявка уйдёт мастеру в Telegram готовым списком.</p>
 
         <fieldset>
           <legend>Процедуры</legend>
           <ul class="picks" data-picks></ul>
         </fieldset>
         <div class="booking__total"><span>Итого</span><b data-total>—</b></div>
+
+        <fieldset class="slots">
+          <legend>Дата</legend>
+          <div class="days" data-days></div>
+          <p class="slots__label">Свободное время</p>
+          <div class="times" data-times></div>
+        </fieldset>
 
         <label class="field" data-field="name">
           <span>Имя</span>
@@ -699,10 +739,6 @@
         <label class="field" data-field="phone">
           <span>Телефон</span>
           <input name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+7 (___) ___-__-__">
-        </label>
-        <label class="field">
-          <span>Удобные дата и время <i>— необязательно</i></span>
-          <input name="time" placeholder="Например, суббота после 15:00">
         </label>
         <label class="field">
           <span>Комментарий <i>— необязательно</i></span>
@@ -900,6 +936,86 @@
     const errorEl = form.querySelector('[data-error]');
     const cart = document.querySelector('[data-cart]');
 
+    // ---------- Свободное время ----------
+    // Студия работает с 10:00 до 21:00, запись каждые 2 часа (последняя — 18:00–20:00).
+    const OPEN_HOUR = 10;
+    const CLOSE_HOUR = 21;
+    const SLOT_HOURS = 2;
+    const DAYS_AHEAD = 14;
+    // Занятое время по дням. Пока пусто — всё свободно.
+    // Позже сюда будут подставляться данные из таблицы менеджера, например:
+    // { '2026-11-07': ['12:00', '16:00'] }
+    const BUSY = {};
+
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const dayKey = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    const hourText = (h) => `${pad2(h)}:00`;
+    const slot = { day: null, hour: null };
+
+    function freeHours(date) {
+      const now = new Date();
+      const isToday = dayKey(date) === dayKey(now);
+      const busy = BUSY[dayKey(date)] || [];
+      const hours = [];
+      for (let h = OPEN_HOUR; h + SLOT_HOURS <= CLOSE_HOUR; h += SLOT_HOURS) {
+        // сегодня показываем только время, до которого осталось больше часа
+        if (isToday && h * 60 <= now.getHours() * 60 + now.getMinutes() + 60) continue;
+        if (!busy.includes(hourText(h))) hours.push(h);
+      }
+      return hours;
+    }
+
+    function bookingDays() {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      return Array.from({ length: DAYS_AHEAD }, (_, i) => {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        return d;
+      }).filter((d) => freeHours(d).length);
+    }
+
+    const daysEl = form.querySelector('[data-days]');
+    const timesEl = form.querySelector('[data-times]');
+
+    function renderDays() {
+      const days = bookingDays();
+      if (!days.some((d) => dayKey(d) === slot.day)) { slot.day = days[0] ? dayKey(days[0]) : null; slot.hour = null; }
+      const today = dayKey(new Date());
+      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+      daysEl.innerHTML = days.map((d) => {
+        const key = dayKey(d);
+        const top = key === today ? 'Сегодня' : key === dayKey(tomorrow) ? 'Завтра'
+          : d.toLocaleDateString('ru-RU', { weekday: 'short' }).replace(/^./, (c) => c.toUpperCase());
+        const month = d.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '');
+        return `<button type="button" class="day" data-day="${key}" aria-pressed="${key === slot.day}">
+          ${top}<b>${d.getDate()}</b>${month}</button>`;
+      }).join('');
+      renderTimes();
+    }
+
+    function renderTimes() {
+      daysEl.querySelectorAll('[data-day]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.day === slot.day));
+      if (!slot.day) { timesEl.innerHTML = '<p class="times__empty">Свободного времени пока нет — позвоните нам.</p>'; return; }
+      const hours = freeHours(new Date(slot.day + 'T00:00'));
+      timesEl.innerHTML = hours.map((h) => `
+        <button type="button" class="time" data-hour="${h}" aria-pressed="${h === slot.hour}">
+          <b>${hourText(h)} – ${hourText(h + SLOT_HOURS)}</b><span>${h === slot.hour ? 'выбрано' : 'свободно'}</span>
+        </button>`).join('');
+    }
+
+    const slotText = () => {
+      const d = new Date(slot.day + 'T00:00');
+      return `${d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}, ${hourText(slot.hour)}–${hourText(slot.hour + SLOT_HOURS)}`;
+    };
+
+    form.addEventListener('click', (e) => {
+      const day = e.target.closest('[data-day]');
+      const hour = e.target.closest('[data-hour]');
+      if (day) { slot.day = day.dataset.day; slot.hour = null; renderTimes(); }
+      if (hour) { slot.hour = Number(hour.dataset.hour); renderTimes(); errorEl.textContent = ''; }
+    });
+
     function summary() {
       const list = services.filter((s) => picked.has(s.id));
       const sum = list.reduce((acc, s) => acc + cost(s), 0);
@@ -956,13 +1072,13 @@
       e.preventDefault();
       const { list, label } = summary();
       const name = form.elements.client.value.trim();
-      const time = form.elements.time.value.trim();
       const comment = form.elements.comment.value.trim();
       const invalid = (field) => form.querySelector(`[data-field="${field}"]`).classList.add('is-invalid');
 
       let error = '';
       if (digits().length !== 11) { invalid('phone'); error = 'Проверьте номер телефона.'; }
       if (!name) { invalid('name'); error = 'Укажите, как к вам обращаться.'; }
+      if (slot.hour === null) error = 'Выберите дату и свободное время.';
       if (!list.length) error = 'Выберите хотя бы одну процедуру — нажмите «+».';
       errorEl.textContent = error;
       if (error) return;
@@ -976,9 +1092,9 @@
           : `• ${s.name} — ${priceText(s)}`),
         `Итого: ${label}`,
         '',
+        `Дата и время: ${slotText()}`,
         `Имя: ${name}`,
         `Телефон: ${phone.value}`,
-        time ? `Удобное время: ${time}` : null,
         comment ? `Комментарий: ${comment}` : null,
       ].filter((line) => line !== null).join('\n');
 
@@ -994,7 +1110,7 @@
     });
 
     // Окно записи
-    const open = () => { modal.classList.add('is-open'); document.body.style.overflow = 'hidden'; render(); };
+    const open = () => { modal.classList.add('is-open'); document.body.style.overflow = 'hidden'; renderDays(); render(); };
     const close = () => {
       modal.classList.remove('is-open');
       document.body.style.overflow = '';
@@ -1003,6 +1119,8 @@
         setTimeout(() => { box.classList.remove('is-done'); form.reset(); errorEl.textContent = ''; }, 500);
         picked.clear();
         resetNails();
+        slot.day = null;
+        slot.hour = null;
       }
       render();
     };
