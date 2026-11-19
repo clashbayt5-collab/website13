@@ -1,0 +1,1134 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tvorim — студия красоты в Норильске</title>
+  <meta name="description" content="Tvorim, Норильск, ул. Павлова, 3: наращивание и ламинирование ресниц, брови, перманентный макияж, массаж. Каждый день 11:00–21:00, запись онлайн.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Manrope:wght@300;400;500&display=swap" rel="stylesheet">
+  <script>
+    // Вступительная анимация — один раз за визит. Она мягкая (рисование линий и плавные появления),
+    // поэтому показываем её и при «уменьшении анимации» в системе — иначе её не увидят на многих Windows.
+    (function () {
+      var seen = false;
+      try { seen = sessionStorage.getItem('tvorim-intro') === '1'; } catch (e) {}
+      if (!seen) document.documentElement.classList.add('intro-on');
+    })();
+  </script>
+  <style>
+    :root {
+      --milk: #fbf8f4;
+      --milk-deep: #f4eee6;
+      --ink: #2e2a31;
+      --ink-soft: #7a727a;
+      --accent: #efdfcc;
+      --accent-soft: #f7efe5;
+      --gold: #c3a27c;
+      --line: rgba(46, 42, 49, 0.12);
+      --veil: rgba(251, 248, 244, 0.9);
+      --radius-lg: 32px;
+      --serif: "Cormorant Garamond", Georgia, serif;
+      --sans: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+      --ease: cubic-bezier(.22, .61, .36, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--milk);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-weight: 300;
+      font-size: 17px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+    .intro-on body { overflow: hidden; }
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+
+    h1, h2, h3 { font-family: var(--serif); font-weight: 400; line-height: 1.15; margin: 0; }
+    h2 { font-size: clamp(36px, 5vw, 54px); }
+    h3 { font-size: 26px; }
+
+    .container { width: min(1160px, 100% - 32px); margin-inline: auto; }
+    section { padding: clamp(80px, 12vw, 150px) 0; position: relative; }
+
+    /* Секции с фотографией студии на фоне под молочной вуалью */
+    .photo-bg { background: var(--milk); isolation: isolate; }
+    .photo-bg::before {
+      content: ""; position: absolute; inset: 0; z-index: -2;
+      background-image: var(--bg); background-size: cover; background-position: center;
+    }
+    .photo-bg::after { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--veil); }
+    @media (min-width: 961px) and (hover: hover) {
+      .photo-bg::before { background-attachment: fixed; }
+    }
+
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 14px;
+      font-size: 12px; letter-spacing: .22em; text-transform: uppercase;
+      color: var(--ink-soft); margin-bottom: 22px;
+    }
+    .eyebrow::before { content: ""; width: 36px; height: 1px; background: var(--gold); }
+
+    .section-head { max-width: 620px; margin-bottom: clamp(44px, 6vw, 72px); }
+    .section-head p { color: var(--ink-soft); margin: 18px 0 0; }
+    .section-head p + p { margin-top: 12px; font-size: 14px; }
+
+    /* ---------- Кнопки ---------- */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 15px 34px; border-radius: 999px;
+      border: 1px solid rgba(46, 42, 49, .16);
+      background: var(--accent); color: var(--ink);
+      font: 400 15px/1 var(--sans); letter-spacing: .04em; cursor: pointer;
+      transition: background .5s var(--ease), border-color .5s var(--ease), transform .5s var(--ease);
+    }
+    .btn:hover { background: var(--accent-soft); border-color: rgba(46, 42, 49, .3); transform: translateY(-1px); }
+    .btn--ghost { background: rgba(255, 255, 255, .5); }
+    .btn--ghost:hover { background: var(--accent-soft); }
+    .btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.3; }
+    .btn--pulse { position: relative; }
+    .btn--pulse::after {
+      content: ""; position: absolute; inset: -1px; border-radius: inherit;
+      animation: pulse 4.5s var(--ease) infinite; pointer-events: none;
+    }
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(214, 186, 152, .8); }
+      28%  { box-shadow: 0 0 0 16px rgba(214, 186, 152, 0); }
+      100% { box-shadow: 0 0 0 16px rgba(214, 186, 152, 0); }
+    }
+
+    /* ---------- Вступление ---------- */
+    #intro {
+      position: fixed; inset: 0; z-index: 300; display: none;
+      flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+      background: radial-gradient(circle at 50% 45%, #fff 0%, var(--milk) 55%, var(--milk-deep) 100%);
+      /* страховка: если скрипт не сработал, вступление само уйдёт */
+      animation: intro-failsafe .8s 7s forwards;
+    }
+    .intro-on #intro { display: flex; }
+    #intro.is-leaving { opacity: 0; transform: translateY(-3%); transition: opacity .9s var(--ease), transform .9s var(--ease); }
+    @keyframes intro-failsafe { to { opacity: 0; visibility: hidden; } }
+    .intro__eye { width: min(420px, 78vw); overflow: visible; }
+    .intro__logo {
+      font: 400 clamp(40px, 8vw, 64px)/1 var(--serif); letter-spacing: .32em; padding-left: .32em;
+      display: flex;
+    }
+    .intro__logo span { opacity: 0; transform: translateY(14px); animation: letter .8s var(--ease) forwards; }
+    .intro__sub { font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: var(--ink-soft); opacity: 0; animation: fade .9s 2.9s forwards; }
+    .intro__skip {
+      position: absolute; right: 20px; bottom: 20px; padding: 10px 18px; border-radius: 999px;
+      border: 1px solid var(--line); background: rgba(255, 255, 255, .6); color: var(--ink-soft);
+      font: 300 13px var(--sans); cursor: pointer;
+    }
+    @keyframes letter { to { opacity: 1; transform: none; } }
+    @keyframes fade { to { opacity: 1; } }
+
+    /* Глаз: общий для вступления и первого экрана */
+    .eye .lid { fill: none; stroke: var(--ink); stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; }
+    .eye .lid--low { stroke-width: 1.6; opacity: .5; }
+    .eye .lash { fill: none; stroke: var(--ink); stroke-width: 2.1; stroke-linecap: round; }
+    .eye .lash--low { stroke-width: 1.3; opacity: .45; }
+    .eye .brow { fill: none; stroke: #5a4638; stroke-width: 7; stroke-linecap: round; opacity: .8; }
+    .eye .white { fill: #fff; }
+    .eye .iris { fill: url(#irisGrad); }
+    .eye .pupil { fill: #2a2126; }
+    .eye .glint { fill: #fff; opacity: .85; }
+    .eye .blinker { transform-box: view-box; transform-origin: 50% 54%; }
+    .eye.is-drawing .lid { stroke-dasharray: 420; stroke-dashoffset: 420; animation: draw 1s var(--ease) forwards; }
+    .eye.is-drawing .brow { stroke-dasharray: 320; stroke-dashoffset: 320; animation: draw 1.1s 1.6s var(--ease) forwards; }
+    .eye.is-drawing .lash { stroke-dasharray: 60; stroke-dashoffset: 60; animation: draw .45s var(--ease) forwards; }
+    .eye.is-drawing .iris-group { opacity: 0; animation: fade .8s 1.1s forwards; }
+    .eye.is-drawing .white { opacity: 0; animation: fade .6s .8s forwards; }
+    .eye.blink-once .blinker { animation: blink .5s 2.3s ease-in-out; }
+    .eye.blink-loop .blinker { animation: blink-loop 6s 3s ease-in-out infinite; }
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+    @keyframes blink { 0%, 100% { transform: scaleY(1); } 45%, 55% { transform: scaleY(.06); } }
+    @keyframes blink-loop { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.06); } }
+    .iris-group { transition: transform .5s var(--ease); }
+    .eye.is-waiting { visibility: hidden; }
+
+    /* ---------- Шапка ---------- */
+    .header { position: fixed; inset: 0 0 auto; z-index: 50; border-bottom: 1px solid transparent; transition: background .6s var(--ease), border-color .6s var(--ease); }
+    .header.is-scrolled { background: rgba(251, 248, 244, .88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-color: var(--line); }
+    .header__inner { display: flex; align-items: center; justify-content: space-between; height: 76px; }
+    .logo { font: 400 24px var(--serif); letter-spacing: .3em; }
+    .nav { display: flex; gap: 32px; font-size: 14px; letter-spacing: .04em; }
+    .nav a { position: relative; color: var(--ink-soft); transition: color .4s; }
+    .nav a::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 1px; background: var(--gold); transform: scaleX(0); transform-origin: left; transition: transform .5s var(--ease); }
+    .nav a:hover { color: var(--ink); }
+    .nav a:hover::after { transform: scaleX(1); }
+    .header__cta { padding: 11px 24px; font-size: 14px; }
+
+    /* ---------- Первый экран ---------- */
+    .hero { padding: 130px 0 clamp(70px, 10vw, 110px); min-height: 100vh; display: flex; align-items: center; --veil: linear-gradient(100deg, rgba(251, 248, 244, .95) 35%, rgba(251, 248, 244, .8)); }
+    .hero__grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(40px, 6vw, 90px); align-items: center; }
+    .hero h1 { font-size: clamp(44px, 6.2vw, 80px); }
+    .hero h1 em { font-style: italic; color: #8a6f58; }
+    .hero__text p { max-width: 460px; color: var(--ink-soft); margin: 28px 0 42px; font-size: 18px; }
+    .hero__meta { display: flex; gap: 40px; margin-top: 60px; padding-top: 26px; border-top: 1px solid var(--line); max-width: 480px; }
+    .hero__meta div { font-size: 13px; color: var(--ink-soft); }
+    .hero__meta strong { display: block; font: 400 32px/1.1 var(--serif); color: var(--ink); margin-bottom: 4px; }
+    .hero__meta strong i { font-style: normal; color: var(--gold); font-size: 22px; }
+
+    .hero__art { position: relative; aspect-ratio: 1; max-width: 520px; width: 100%; justify-self: center; display: grid; place-items: center; }
+    .hero__art .ring { position: absolute; inset: 0; border-radius: 50%; border: 1px solid rgba(195, 162, 124, .45); }
+    .hero__art .ring--2 { inset: 7%; border-style: dashed; border-color: rgba(195, 162, 124, .35); animation: spin 60s linear infinite; }
+    .hero__art .disc { position: absolute; inset: 13%; border-radius: 50%; background: radial-gradient(circle at 50% 40%, #fff, var(--accent-soft) 70%); box-shadow: 0 40px 80px -50px rgba(46, 42, 49, .45); }
+    .hero__art .eye { position: relative; width: 72%; overflow: visible; }
+    .sparkle { position: absolute; width: 14px; height: 14px; color: var(--gold); animation: twinkle 3.2s ease-in-out infinite; }
+    .sparkle svg { width: 100%; height: 100%; fill: currentColor; }
+    .sparkle:nth-of-type(1) { top: 14%; left: 16%; }
+    .sparkle:nth-of-type(2) { top: 22%; right: 12%; animation-delay: 1.1s; width: 10px; height: 10px; }
+    .sparkle:nth-of-type(3) { bottom: 18%; left: 22%; animation-delay: 2s; width: 9px; height: 9px; }
+    .hero__badge {
+      position: absolute; right: 2%; bottom: 10%;
+      background: rgba(255, 255, 255, .85); border: 1px solid var(--line); border-radius: 999px;
+      padding: 12px 20px; font-size: 13px; display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 18px 40px -24px rgba(46, 42, 49, .35);
+    }
+    .hero__badge b { font: 400 18px var(--serif); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes twinkle { 0%, 100% { opacity: .2; transform: scale(.7); } 50% { opacity: 1; transform: scale(1); } }
+
+    /* Мягкая рамка для фото */
+    .frame { position: relative; overflow: hidden; border-radius: var(--radius-lg); background: var(--milk-deep); box-shadow: 0 30px 60px -40px rgba(46, 42, 49, .4); }
+    .frame img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* ---------- Галерея ---------- */
+    .gallery { background: var(--milk-deep); }
+    .gallery__head { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; max-width: none; }
+    .carousel__track {
+      display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 2 * 28px) / 3); gap: 28px;
+      overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
+      padding: 6px 2px 10px; scrollbar-width: none; cursor: grab;
+    }
+    .carousel__track::-webkit-scrollbar { display: none; }
+    .carousel__track.is-dragging { cursor: grabbing; scroll-snap-type: none; scroll-behavior: auto; }
+    .work { scroll-snap-align: start; margin: 0; }
+    .work .frame { aspect-ratio: 4 / 5; }
+    .work .frame img { transition: transform 1.1s var(--ease); user-select: none; -webkit-user-drag: none; }
+    .work:hover .frame img { transform: scale(1.045); }
+    .work figcaption { display: flex; justify-content: space-between; margin-top: 18px; font-size: 14px; color: var(--ink-soft); }
+    .work figcaption span:first-child { font-family: var(--serif); font-size: 21px; color: var(--ink); }
+    .carousel__nav { display: flex; align-items: center; gap: 14px; }
+    .carousel__count { font: 400 18px var(--serif); color: var(--ink-soft); min-width: 96px; text-align: center; letter-spacing: .06em; }
+    .round { width: 52px; height: 52px; border-radius: 50%; border: 1px solid rgba(46, 42, 49, .2); background: transparent; color: var(--ink); display: grid; place-items: center; cursor: pointer; transition: background .5s var(--ease), border-color .5s var(--ease), opacity .4s; }
+    .round:hover { background: var(--accent); border-color: transparent; }
+    .round:disabled { opacity: .35; pointer-events: none; }
+    .round svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.2; }
+    .carousel__progress { margin-top: 44px; height: 1px; background: var(--line); position: relative; overflow: hidden; }
+    .carousel__progress i { position: absolute; inset: 0 auto 0 0; background: var(--gold); width: 33%; transition: transform .6s var(--ease), width .6s var(--ease); }
+
+    /* ---------- Прайс ---------- */
+    .price__grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: clamp(40px, 8vw, 120px); align-items: start; }
+    .price__list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+    .price__item { display: flex; align-items: baseline; gap: 18px; padding: 24px 0; border-bottom: 1px solid var(--line); }
+    .price__item h3 { font-size: 24px; }
+    .price__item p { margin: 4px 0 0; font-size: 14px; color: var(--ink-soft); }
+    .price__item .dots { flex: 1; border-bottom: 1px dashed rgba(46, 42, 49, .18); transform: translateY(-6px); min-width: 20px; }
+    .price__item .cost { font: 400 25px var(--serif); white-space: nowrap; text-align: right; }
+    .price__more { margin-top: 26px; font-size: 14px; color: var(--ink-soft); }
+    .price__more a { color: var(--ink); border-bottom: 1px solid var(--gold); }
+
+    .add { flex: none; align-self: center; padding: 0; border: 0; background: none; cursor: pointer; color: var(--ink); }
+    .tick { position: relative; display: grid; place-items: center; flex: none; width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(46, 42, 49, .2); background: rgba(255, 255, 255, .5); transition: background .5s var(--ease), border-color .5s var(--ease); }
+    .tick svg { grid-area: 1 / 1; width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.3; transition: opacity .4s var(--ease), transform .5s var(--ease); }
+    .tick .i-check { opacity: 0; transform: scale(.5); }
+    .add:hover .tick, .pick:hover .tick { background: var(--accent-soft); }
+    [aria-pressed="true"] .tick { background: var(--accent) !important; border-color: transparent; }
+    [aria-pressed="true"] .tick .i-plus { opacity: 0; transform: rotate(90deg) scale(.5); }
+    [aria-pressed="true"] .tick .i-check { opacity: 1; transform: none; }
+
+    /* ---------- О студии ---------- */
+    .about { background: var(--milk-deep); }
+    .about__grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: clamp(40px, 8vw, 110px); align-items: center; }
+    .about__photos { position: relative; }
+    .about__photos .frame:first-child { aspect-ratio: 4 / 5; border-radius: 200px 200px var(--radius-lg) var(--radius-lg); }
+    .about__photos .frame--small { position: absolute; width: 42%; aspect-ratio: 3 / 4; right: -6%; bottom: -8%; border: 6px solid var(--milk-deep); }
+    .about__text p { margin: 0 0 22px; }
+    .about__role { font: italic 400 22px var(--serif); color: var(--ink-soft); margin: 8px 0 30px !important; }
+    .about__facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 40px; padding-top: 30px; border-top: 1px solid var(--line); }
+    .about__facts div { font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+    .about__facts strong { display: block; font: 400 34px/1.1 var(--serif); color: var(--ink); margin-bottom: 6px; }
+
+    /* ---------- Отзывы ---------- */
+    .reviews { --veil: rgba(251, 248, 244, .93); }
+    .reviews__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+    .review { padding: 42px 36px 36px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: rgba(255, 255, 255, .7); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: flex; flex-direction: column; transition: background .6s var(--ease), transform .6s var(--ease); }
+    .review:hover { background: rgba(255, 255, 255, .92); transform: translateY(-4px); }
+    .review__stars { color: var(--gold); letter-spacing: .2em; font-size: 14px; }
+    .review p { margin: 16px 0 30px; flex: 1; }
+    .review footer { display: flex; align-items: center; gap: 14px; padding-top: 22px; border-top: 1px solid var(--line); }
+    .review__avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--accent); display: grid; place-items: center; font: 400 20px var(--serif); }
+    .review footer b { font-weight: 400; display: block; }
+    .review footer small { color: var(--ink-soft); font-size: 13px; }
+    .reviews__more { margin-top: 36px; text-align: center; font-size: 14px; color: var(--ink-soft); }
+    .reviews__more a { color: var(--ink); border-bottom: 1px solid var(--gold); }
+
+    /* ---------- Контакты ---------- */
+    .contacts__card {
+      position: relative; isolation: isolate; overflow: hidden;
+      border: 1px solid var(--line); border-radius: 40px; padding: clamp(40px, 7vw, 90px);
+      display: grid; grid-template-columns: 1.1fr .9fr; gap: clamp(40px, 6vw, 80px); align-items: center;
+      --veil: linear-gradient(120deg, rgba(251, 248, 244, .96) 40%, rgba(251, 248, 244, .82));
+    }
+    .contacts__card::before { content: ""; position: absolute; inset: 0; z-index: -2; background: var(--bg) center / cover; }
+    .contacts__card::after { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--veil); }
+    .contacts__card h2 { margin-bottom: 22px; }
+    .contacts__card > div > p { color: var(--ink-soft); margin: 0 0 36px; max-width: 420px; }
+    .contacts__buttons { display: flex; flex-wrap: wrap; gap: 12px; }
+    .contacts__info { list-style: none; margin: 0; padding: 0; }
+    .contacts__info li { padding: 20px 0; border-bottom: 1px solid var(--line); }
+    .contacts__info li:first-child { border-top: 1px solid var(--line); }
+    .contacts__info span { display: block; font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 6px; }
+    .contacts__info b { font: 400 22px/1.35 var(--serif); }
+    .contacts__info small { display: block; font-size: 13px; color: var(--ink-soft); }
+    .contacts__info a { border-bottom: 1px solid transparent; transition: border-color .4s; }
+    .contacts__info a:hover { border-color: var(--gold); }
+
+    .footer { padding: 40px 0 110px; font-size: 13px; color: var(--ink-soft); }
+    .footer .container { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+
+    /* ---------- Плашка выбранного и окно записи ---------- */
+    .cart { position: fixed; left: 50%; bottom: 22px; z-index: 60; display: flex; align-items: center; gap: 26px; padding: 9px 9px 9px 28px; background: rgba(251, 248, 244, .95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: 999px; box-shadow: 0 24px 50px -28px rgba(46, 42, 49, .5); transform: translate(-50%, 160%); opacity: 0; transition: transform .7s var(--ease), opacity .7s var(--ease); }
+    .cart.is-visible { transform: translate(-50%, 0); opacity: 1; }
+    .cart__info { display: flex; flex-direction: column; line-height: 1.35; font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+    .cart__info b { font-weight: 400; font-size: 15px; color: var(--ink); }
+    .cart .btn { padding: 13px 28px; }
+
+    .modal { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: rgba(46, 42, 49, .22); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; visibility: hidden; transition: opacity .5s var(--ease), visibility .5s; }
+    .modal.is-open { opacity: 1; visibility: visible; }
+    .modal__box { width: min(520px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; background: var(--milk); border-radius: var(--radius-lg); border: 1px solid var(--line); padding: 44px 38px 34px; position: relative; transform: translateY(18px); transition: transform .6s var(--ease); box-shadow: 0 40px 80px -40px rgba(46, 42, 49, .45); }
+    .modal.is-open .modal__box { transform: none; }
+    .modal__box h3 { font-size: 34px; margin-bottom: 10px; padding-right: 40px; }
+    .modal__box .btn { width: 100%; margin-top: 12px; }
+    .modal__close { position: absolute; top: 16px; right: 16px; width: 40px; height: 40px; }
+
+    .booking__lead { color: var(--ink-soft); margin: 0 0 28px; font-size: 15px; line-height: 1.6; }
+    .booking fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+    .booking legend, .field > span, .slots__label { display: block; padding: 0; margin: 0 0 10px; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-soft); }
+    .field > span i { font-style: normal; text-transform: none; letter-spacing: 0; opacity: .7; }
+    .picks { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+    .picks li { border-bottom: 1px solid var(--line); }
+    .pick { width: 100%; display: flex; align-items: center; gap: 14px; padding: 12px 2px; background: none; border: 0; font: 300 15px/1.4 var(--sans); color: var(--ink); text-align: left; cursor: pointer; }
+    .pick__name { flex: 1; }
+    .pick__price { font: 400 19px var(--serif); font-feature-settings: "lnum" 1; white-space: nowrap; }
+    .pick .tick { width: 34px; height: 34px; }
+    .pick .tick svg { width: 14px; height: 14px; }
+    .booking__total { display: flex; justify-content: space-between; align-items: baseline; margin: 16px 0 28px; }
+    .booking__total span { font-size: 14px; color: var(--ink-soft); }
+    .booking__total b { font: 400 28px var(--serif); font-feature-settings: "lnum" 1; }
+
+    .booking .slots { margin-bottom: 26px; }
+    .days { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 6px; margin: 0 -2px 18px; scroll-snap-type: x proximity; }
+    .days::-webkit-scrollbar { display: none; }
+    .day { flex: none; width: 66px; padding: 10px 0 9px; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; gap: 2px; border: 1px solid rgba(46, 42, 49, .16); border-radius: 18px; background: rgba(255, 255, 255, .6); color: var(--ink-soft); font: 300 12px/1.3 var(--sans); cursor: pointer; transition: background .4s var(--ease), border-color .4s var(--ease); }
+    .day b { font: 400 22px/1.1 var(--serif); font-feature-settings: "lnum" 1; color: var(--ink); }
+    .day:hover, .time:hover { background: var(--accent-soft); }
+    .times { display: flex; flex-direction: column; gap: 8px; }
+    .time { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; text-align: left; border: 1px solid rgba(46, 42, 49, .16); border-radius: 16px; background: rgba(255, 255, 255, .6); color: var(--ink); font: 300 14px var(--sans); cursor: pointer; transition: background .4s var(--ease), border-color .4s var(--ease); }
+    .time b { font: 400 20px var(--serif); font-feature-settings: "lnum" 1; }
+    .time span { color: var(--ink-soft); }
+    .day[aria-pressed="true"], .time[aria-pressed="true"] { background: var(--accent); border-color: transparent; color: var(--ink); }
+    .times__empty { margin: 0; font-size: 14px; color: var(--ink-soft); }
+
+    .field { display: block; margin-bottom: 16px; }
+    .field input, .field textarea { width: 100%; padding: 13px 18px; border: 1px solid rgba(46, 42, 49, .16); border-radius: 16px; background: rgba(255, 255, 255, .6); font: 300 16px/1.5 var(--sans); color: var(--ink); outline: none; resize: vertical; transition: border-color .4s var(--ease), background .4s var(--ease); }
+    .field input::placeholder, .field textarea::placeholder { color: rgba(122, 114, 122, .6); }
+    .field input:focus, .field textarea:focus { border-color: var(--gold); background: #fff; }
+    .field.is-invalid input { border-color: #d49aa1; background: #fdf3f4; }
+    .booking__error { margin: 4px 0 0; font-size: 14px; color: #a5606a; }
+    .booking__error:empty { display: none; }
+    .booking__hint { margin: 16px 0 0; font-size: 13px; line-height: 1.55; color: var(--ink-soft); text-align: center; }
+    .booking__done { display: none; text-align: center; padding: 10px 0 0; }
+    .modal__box.is-done .booking { display: none; }
+    .modal__box.is-done .booking__done { display: block; }
+    .booking__done .tick { width: 64px; height: 64px; margin: 0 auto 24px; }
+    .booking__done .tick svg { width: 24px; height: 24px; }
+    .booking__done h3 { padding: 0; }
+    .booking__done p { color: var(--ink-soft); margin: 0 0 26px; font-size: 15px; }
+
+    .toast { position: fixed; left: 50%; top: 92px; z-index: 200; max-width: calc(100% - 32px); padding: 14px 26px; background: var(--milk); border: 1px solid var(--line); border-radius: 999px; box-shadow: 0 24px 50px -28px rgba(46, 42, 49, .5); font-size: 14px; text-align: center; pointer-events: none; opacity: 0; transform: translate(-50%, -10px); transition: opacity .5s var(--ease), transform .5s var(--ease); }
+    .toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+
+    /* Ровные цифры в шрифте с засечками */
+    h1, h2, h3, .cost, strong, .carousel__count, .work figcaption span, .contacts__info b, .hero__badge b { font-variant-numeric: lining-nums !important; font-feature-settings: "lnum" 1 !important; }
+
+    /* ---------- Плавное появление ---------- */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 1.1s var(--ease), transform 1.1s var(--ease); }
+    .reveal.is-visible { opacity: 1; transform: none; }
+    .reveal[data-delay="1"] { transition-delay: .12s; }
+    .reveal[data-delay="2"] { transition-delay: .24s; }
+    .reveal[data-delay="3"] { transition-delay: .36s; }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .reveal { opacity: 1; transform: none; transition: none; }
+      .btn--pulse::after, .ring--2, .sparkle { animation: none !important; }
+      .carousel__track { scroll-behavior: auto; }
+    }
+
+    /* ---------- Адаптив ---------- */
+    @media (max-width: 960px) {
+      .nav { display: none; }
+      .hero__grid, .price__grid, .about__grid, .contacts__card { grid-template-columns: 1fr; }
+      .hero { min-height: auto; }
+      .hero__art { max-width: 420px; order: -1; }
+      .carousel__track { grid-auto-columns: calc((100% - 22px) / 2); gap: 22px; }
+      .reviews__grid { grid-template-columns: 1fr; max-width: 560px; }
+      .about__photos { max-width: 440px; margin-bottom: 30px; }
+    }
+    @media (max-width: 600px) {
+      body { font-size: 16px; }
+      .header__inner { height: 64px; }
+      .logo { font-size: 20px; }
+      .header__cta { padding: 10px 18px; font-size: 13px; }
+      .hero { padding-top: 90px; }
+      .hero__art { max-width: 320px; }
+      .hero__badge { right: 0; bottom: 4%; padding: 10px 16px; }
+      .hero__text p { margin: 22px 0 34px; }
+      .hero__meta { gap: 22px; margin-top: 44px; }
+      .hero__meta strong { font-size: 28px; }
+      .gallery__head { flex-direction: column; align-items: flex-start; }
+      .carousel__track { grid-auto-columns: 82%; gap: 16px; }
+      .price__item { flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+      .price__item .dots { display: none; }
+      .price__item > div { flex: 1 1 100%; }
+      .price__item .cost { margin-right: auto; }
+      .about__facts { gap: 12px; }
+      .about__facts strong { font-size: 28px; }
+      .review { padding: 34px 26px 28px; }
+      .contacts__card { border-radius: 28px; padding: 36px 22px; }
+      .contacts__buttons .btn { width: 100%; }
+      .cart { left: 16px; right: 16px; justify-content: space-between; gap: 12px; padding-left: 22px; transform: translateY(160%); }
+      .cart.is-visible { transform: none; }
+      .cart .btn { padding: 13px 22px; }
+      .modal__box { padding: 36px 22px 26px; }
+      .modal__box h3 { font-size: 30px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Общие заготовки для SVG-глаза -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <radialGradient id="irisGrad" cx="50%" cy="45%" r="55%">
+        <stop offset="0%" stop-color="#c79a6b"/>
+        <stop offset="55%" stop-color="#8a5a3c"/>
+        <stop offset="100%" stop-color="#4d3022"/>
+      </radialGradient>
+      <!-- контур видимого глаза: миндаль высотой ~50px между уголками на y=130 -->
+      <clipPath id="eyeClip"><path d="M40 130 Q200 60 360 130 Q200 192 40 130 Z"/></clipPath>
+    </defs>
+  </svg>
+
+  <!-- Вступление: рисуется глаз, ресницы «наращиваются» одна за другой, глаз моргает -->
+  <div id="intro" aria-hidden="true">
+    <svg class="eye intro__eye is-drawing blink-once" viewBox="0 0 400 240" data-eye></svg>
+    <div class="intro__logo" data-letters="TVORIM"></div>
+    <div class="intro__sub">студия красоты · Норильск</div>
+    <button class="intro__skip" type="button" data-skip>Пропустить</button>
+  </div>
+
+  <header class="header" id="header">
+    <div class="container header__inner">
+      <a href="#top" class="logo" aria-label="Tvorim — на главную">TVORIM</a>
+      <nav class="nav" aria-label="Разделы">
+        <a href="#works">Работы</a>
+        <a href="#price">Цены</a>
+        <a href="#about">О студии</a>
+        <a href="#reviews">Отзывы</a>
+        <a href="#contacts">Контакты</a>
+      </nav>
+      <button class="btn btn--ghost header__cta" type="button" data-book>Записаться</button>
+    </div>
+  </header>
+
+  <main id="top">
+
+    <!-- Первый экран -->
+    <section class="hero photo-bg" style="--bg: url('img/bg-lamps.jpg')">
+      <div class="container hero__grid">
+        <div class="hero__text">
+          <div class="eyebrow reveal">Студия красоты Tvorim · Норильск</div>
+          <h1 class="reveal" data-delay="1">Ресницы, от которых <em>не отвести взгляд</em></h1>
+          <p class="reveal" data-delay="2">Наращивание и ламинирование ресниц, брови, перманентный макияж и массаж — всё в одной уютной студии на Павлова, 3.</p>
+          <div class="reveal" data-delay="3">
+            <button class="btn btn--pulse" type="button" data-book>Записаться</button>
+          </div>
+          <div class="hero__meta reveal" data-delay="3">
+            <div><strong>5,0 <i>★</i></strong>рейтинг на 2ГИС</div>
+            <div><strong>217</strong>оценок клиентов</div>
+            <div><strong>11–21</strong>каждый день</div>
+          </div>
+        </div>
+        <div class="hero__art reveal" data-delay="2" aria-hidden="true">
+          <span class="ring"></span>
+          <span class="ring ring--2"></span>
+          <span class="disc"></span>
+          <svg class="eye blink-loop is-waiting" viewBox="0 0 400 240" data-eye data-hero-eye></svg>
+          <span class="sparkle"><svg viewBox="0 0 24 24"><path d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z"/></svg></span>
+          <span class="sparkle"><svg viewBox="0 0 24 24"><path d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z"/></svg></span>
+          <span class="sparkle"><svg viewBox="0 0 24 24"><path d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z"/></svg></span>
+          <div class="hero__badge"><b>194</b> отзыва на 2ГИС</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Галерея -->
+    <section class="gallery" id="works">
+      <div class="container">
+        <div class="gallery__head section-head">
+          <div class="reveal">
+            <div class="eyebrow">Работы</div>
+            <h2>Работы наших мастеров</h2>
+          </div>
+          <div class="carousel__nav reveal" data-delay="1">
+            <button class="round" type="button" data-prev aria-label="Предыдущие работы"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+            <span class="carousel__count" data-count>01 / 09</span>
+            <button class="round" type="button" data-next aria-label="Следующие работы"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+          </div>
+        </div>
+        <div class="carousel reveal" data-delay="1">
+          <div class="carousel__track" data-track>
+            <figure class="work"><div class="frame"><img src="img/work1.jpg" alt="Наращенные ресницы и оформленные брови" loading="lazy"></div><figcaption><span>Ресницы и брови</span><span>01</span></figcaption></figure>
+            <figure class="work"><div class="frame"><img src="img/work2.jpg" alt="Натуральное наращивание ресниц" loading="lazy"></div><figcaption><span>Натуральный эффект</span><span>02</span></figcaption></figure>
+            <figure class="work"><div class="frame"><img src="img/work3.jpg" alt="Ресницы и брови после процедуры" loading="lazy"></div><figcaption><span>Ресницы и брови</span><span>03</span></figcaption></figure>
+            <figure class="work"><div class="frame"><img src="img/work4.jpg" alt="Наращивание ресниц крупным планом" loading="lazy"></div><figcaption><span>Наращивание</span><span>04</span></figcaption></figure>
+            <figure class="work"><div class="frame"><img src="img/work5.jpg" alt="Ресницы с декором" loading="lazy"></div><figcaption><span>Трендовый образ</span><span>05</span></figcaption></figure>
+            <figure class="work"><div class="frame"><img src="img/work6.jpg" alt="Модель после процедуры в студии" loading="lazy"></div><figcaption><span>Выразительный взгляд</span><span>06</span></figcaption></figure>
+            <figure class="work"><div class="frame"><img src="img/work7.jpg" alt="Ресницы и брови, крупный план" loading="lazy"></div><figcaption><span>Ресницы и брови</span><span>07</span></figcaption></figure>
+            <figure class="work"><div class="frame"><img src="img/work8.jpg" alt="Перманентный макияж губ" loading="lazy"></div><figcaption><span>Перманент губ</span><span>08</span></figcaption></figure>
+            <figure class="work"><div class="frame"><img src="img/work9.jpg" alt="Мягкий естественный образ" loading="lazy"></div><figcaption><span>Естественный образ</span><span>09</span></figcaption></figure>
+          </div>
+          <div class="carousel__progress"><i data-progress></i></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Прайс -->
+    <section class="price photo-bg" id="price" style="--bg: url('img/bg-hall.jpg')">
+      <div class="container price__grid">
+        <div class="section-head reveal">
+          <div class="eyebrow">Прайс</div>
+          <h2>Популярные услуги</h2>
+          <p>Цены из прайса студии. Точную стоимость мастер подтвердит при записи.</p>
+          <p>Нажмите «+», чтобы добавить процедуру в запись.</p>
+        </div>
+        <div>
+          <ul class="price__list">
+            <li class="price__item reveal" data-service="lash-classic" data-name="Наращивание ресниц: классика, 1,5D, 2D" data-price="4000">
+              <div><h3>Наращивание: классика–2D</h3><p>Классика, 1,5D, 2D — естественный взгляд</p></div>
+              <span class="dots"></span><span class="cost">4 000 ₽</span>
+              <button class="add" type="button" data-add="lash-classic" aria-pressed="false" aria-label="Добавить в запись: наращивание, классика–2D"></button>
+            </li>
+            <li class="price__item reveal" data-service="lash-volume" data-name="Наращивание ресниц: объём 3–4D" data-price="4700">
+              <div><h3>Наращивание: объём 3–4D</h3><p>Пышные, выразительные ресницы</p></div>
+              <span class="dots"></span><span class="cost">4 700 ₽</span>
+              <button class="add" type="button" data-add="lash-volume" aria-pressed="false" aria-label="Добавить в запись: наращивание, объём 3–4D"></button>
+            </li>
+            <li class="price__item reveal" data-delay="1" data-service="lash-trend" data-name="Трендовые эффекты + LED" data-price="5500">
+              <div><h3>Трендовые эффекты + LED</h3><p>Мокрый, лучиковый и другие эффекты</p></div>
+              <span class="dots"></span><span class="cost">5 500 ₽</span>
+              <button class="add" type="button" data-add="lash-trend" aria-pressed="false" aria-label="Добавить в запись: трендовые эффекты"></button>
+            </li>
+            <li class="price__item reveal" data-delay="1" data-service="lash-lami" data-name="Ламинирование ресниц" data-price="3000">
+              <div><h3>Ламинирование ресниц</h3><p>Изгиб и блеск своих ресниц</p></div>
+              <span class="dots"></span><span class="cost">3 000 ₽</span>
+              <button class="add" type="button" data-add="lash-lami" aria-pressed="false" aria-label="Добавить в запись: ламинирование ресниц"></button>
+            </li>
+            <li class="price__item reveal" data-delay="1" data-service="brows" data-name="Брови: долговременная укладка + коррекция воском" data-price="2500">
+              <div><h3>Укладка бровей + коррекция</h3><p>Долговременная укладка и коррекция воском</p></div>
+              <span class="dots"></span><span class="cost">2 500 ₽</span>
+              <button class="add" type="button" data-add="brows" aria-pressed="false" aria-label="Добавить в запись: укладка бровей"></button>
+            </li>
+            <li class="price__item reveal" data-delay="2" data-service="brows-complex" data-name="Брови комплекс: укладка, окрашивание, коррекция" data-price="3200">
+              <div><h3>Брови «под ключ»</h3><p>Укладка, окрашивание и коррекция воском</p></div>
+              <span class="dots"></span><span class="cost">3 200 ₽</span>
+              <button class="add" type="button" data-add="brows-complex" aria-pressed="false" aria-label="Добавить в запись: брови под ключ"></button>
+            </li>
+            <li class="price__item reveal" data-delay="2" data-service="pm-brows" data-name="Перманентный макияж бровей" data-price="20000">
+              <div><h3>Перманентный макияж бровей</h3><p>Результат от 1 года до 5 лет</p></div>
+              <span class="dots"></span><span class="cost">20 000 ₽</span>
+              <button class="add" type="button" data-add="pm-brows" aria-pressed="false" aria-label="Добавить в запись: перманентный макияж бровей"></button>
+            </li>
+            <li class="price__item reveal" data-delay="2" data-service="massage" data-name="Расслабляющий массаж" data-price="2700">
+              <div><h3>Расслабляющий массаж</h3><p>Полноценный отдых после процедур</p></div>
+              <span class="dots"></span><span class="cost">2 700 ₽</span>
+              <button class="add" type="button" data-add="massage" aria-pressed="false" aria-label="Добавить в запись: расслабляющий массаж"></button>
+            </li>
+          </ul>
+          <p class="price__more reveal">В полном прайсе больше 100 услуг: перманент губ и век, LED-наращивание, массаж, ногтевой сервис. <a href="https://n1397181.yclients.com/" target="_blank" rel="noopener">Смотреть всё и записаться онлайн</a></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- О студии -->
+    <section class="about" id="about">
+      <div class="container about__grid">
+        <div class="about__photos reveal">
+          <div class="frame"><img src="img/about.jpg" alt="Зона ожидания студии Tvorim с логотипом на стене" loading="lazy"></div>
+          <div class="frame frame--small"><img src="img/workplace.jpg" alt="Рабочее место мастера в студии" loading="lazy"></div>
+        </div>
+        <div class="about__text">
+          <div class="eyebrow reveal">О студии</div>
+          <h2 class="reveal" data-delay="1">Tvorim</h2>
+          <p class="about__role reveal" data-delay="1">место, куда приходят за красотой и отдыхом</p>
+          <p class="reveal" data-delay="2">За один визит здесь можно сделать ресницы, привести в порядок брови и уйти на массаж. В отзывах клиенты чаще всего пишут про чистоту, уют и внимательных мастеров — Надию, Лизу, Анастасию, Евгению и Анну.</p>
+          <p class="reveal" data-delay="2">Студия работает каждый день с 11:00 до 21:00 по предварительной записи. Оплатить можно картой, наличными, переводом или по QR-коду. В студии есть уходовая и декоративная косметика.</p>
+          <div class="about__facts reveal" data-delay="3">
+            <div><strong>5,0</strong>рейтинг на 2ГИС</div>
+            <div><strong>217</strong>оценок клиентов</div>
+            <div><strong>100+</strong>услуг в прайсе</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Отзывы -->
+    <section class="reviews photo-bg" id="reviews" style="--bg: url('img/bg-mural.jpg')">
+      <div class="container">
+        <div class="section-head reveal">
+          <div class="eyebrow">Отзывы</div>
+          <h2>Что говорят клиентки</h2>
+        </div>
+        <div class="reviews__grid">
+          <article class="review reveal">
+            <div class="review__stars" aria-label="5 из 5">★★★★★</div>
+            <p>Хожу в эту студию на комплексный уход: ресницы, брови и массаж — всё в одном месте, очень удобно. Наращивание держится отлично, ресницы всегда выглядят ухоженно.</p>
+            <footer><div class="review__avatar">Е</div><div><b>Елена О.</b><small>2 посещения</small></div></footer>
+          </article>
+          <article class="review reveal" data-delay="1">
+            <div class="review__stars" aria-label="5 из 5">★★★★★</div>
+            <p>Классный салон, всегда чисто, вежливый персонал. Хожу туда делать реснички — быстро, качественно, рекомендую.</p>
+            <footer><div class="review__avatar">В</div><div><b>Виктория О.</b><small>наращивание ресниц</small></div></footer>
+          </article>
+          <article class="review reveal" data-delay="2">
+            <div class="review__stars" aria-label="5 из 5">★★★★★</div>
+            <p>Администратор очень вежливый, мастер Надия выполняет работу на отлично! Реснички носятся долго, не отваливаются.</p>
+            <footer><div class="review__avatar">В</div><div><b>Василиса К.</b><small>наращивание ресниц</small></div></footer>
+          </article>
+        </div>
+        <p class="reviews__more reveal">Ещё 190+ отзывов — <a href="https://2gis.ru/norilsk/firm/70000001099731727/tab/reviews" target="_blank" rel="noopener">на 2ГИС</a></p>
+      </div>
+    </section>
+
+    <!-- Контакты -->
+    <section class="contacts" id="contacts">
+      <div class="container">
+        <div class="contacts__card reveal" style="--bg: url('img/bg-reception.jpg')">
+          <div>
+            <div class="eyebrow">Контакты</div>
+            <h2>Ждём вас в&nbsp;Tvorim</h2>
+            <p>Напишите в мессенджер или позвоните — подберём удобное время и мастера.</p>
+            <div class="contacts__buttons">
+              <a class="btn" href="https://t.me/tvorim_studio" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24"><path d="M21 4 3 11l6 2.2M21 4l-3 16-9-6.8M21 4 9 13.2V19l3-3.3"/></svg>
+                Написать в Telegram
+              </a>
+              <a class="btn btn--ghost" href="https://wa.me/79135065333" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7L4 20Z"/></svg>
+                WhatsApp
+              </a>
+              <a class="btn btn--ghost" href="tel:+79135065333">
+                <svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
+                Позвонить
+              </a>
+            </div>
+          </div>
+          <ul class="contacts__info">
+            <li><span>Адрес</span><b><a href="https://2gis.ru/norilsk/firm/70000001099731727" target="_blank" rel="noopener">Норильск, ул. Павлова, 3</a></b><small>офис 60в, 2 этаж</small></li>
+            <li><span>Часы работы</span><b>Ежедневно, 11:00 — 21:00</b><small>по предварительной записи</small></li>
+            <li><span>Телефон</span><b><a href="tel:+79135065333">+7 (913) 506-53-33</a></b></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <span>© 2026 Tvorim, студия красоты · Норильск</span>
+      <a href="#top">Наверх ↑</a>
+    </div>
+  </footer>
+
+  <!-- Плашка с выбранными услугами -->
+  <div class="cart" data-cart aria-live="polite">
+    <span class="cart__info"><b data-cart-count>0 услуг</b><span data-cart-total>0 ₽</span></span>
+    <button class="btn" type="button" data-book>Записаться</button>
+  </div>
+
+  <!-- Окно записи -->
+  <div class="modal" id="book" role="dialog" aria-modal="true" aria-labelledby="book-title">
+    <div class="modal__box">
+      <button class="round modal__close" type="button" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+
+      <form class="booking" novalidate>
+        <h3 id="book-title">Запись в Tvorim</h3>
+        <p class="booking__lead">Отметьте процедуры, выберите свободное время и оставьте контакты — заявка уйдёт администратору готовым списком.</p>
+
+        <fieldset>
+          <legend>Процедуры</legend>
+          <ul class="picks" data-picks></ul>
+        </fieldset>
+        <div class="booking__total"><span>Итого</span><b data-total>—</b></div>
+
+        <fieldset class="slots">
+          <legend>Дата</legend>
+          <div class="days" data-days></div>
+          <p class="slots__label">Свободное время</p>
+          <div class="times" data-times></div>
+        </fieldset>
+
+        <label class="field" data-field="name">
+          <span>Имя</span>
+          <input name="client" autocomplete="name" placeholder="Как к вам обращаться">
+        </label>
+        <label class="field" data-field="phone">
+          <span>Телефон</span>
+          <input name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+7 (___) ___-__-__">
+        </label>
+        <label class="field">
+          <span>Комментарий <i>— необязательно</i></span>
+          <textarea name="comment" rows="2" placeholder="Пожелания, любимый мастер, эффект"></textarea>
+        </label>
+
+        <p class="booking__error" data-error role="alert"></p>
+        <button class="btn" type="submit" data-channel="whatsapp">
+          <svg viewBox="0 0 24 24"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7L4 20Z"/></svg>
+          Отправить в WhatsApp
+        </button>
+        <button class="btn btn--ghost" type="submit" data-channel="telegram">
+          <svg viewBox="0 0 24 24"><path d="M21 4 3 11l6 2.2M21 4l-3 16-9-6.8M21 4 9 13.2V19l3-3.3"/></svg>
+          Отправить в Telegram
+        </button>
+        <a class="btn btn--ghost" href="tel:+79135065333">
+          <svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
+          +7 (913) 506-53-33
+        </a>
+        <p class="booking__hint">Откроется чат со студией, где заявка уже будет набрана, — останется нажать «Отправить».</p>
+      </form>
+
+      <div class="booking__done">
+        <span class="tick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+        <h3>Почти готово</h3>
+        <p>Заявка собрана — в чате со студией нажмите «Отправить». Если чат не открылся сам, нажмите кнопку ниже. Текст заявки скопирован: если он не подставился, просто вставьте его в сообщение.</p>
+        <a class="btn" href="https://wa.me/79135065333" target="_blank" rel="noopener" data-chat-again>Открыть чат</a>
+        <a class="btn btn--ghost" href="tel:+79135065333">
+          <svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
+          +7 (913) 506-53-33
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" data-toast role="status" aria-live="polite"></div>
+
+  <script>
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // ---------- SVG-глаз ----------
+    // Веки — квадратичные кривые между уголками (40,130) и (360,130); ресницы растут вдоль верхнего.
+    const UPPER = { x0: 40, y0: 130, cx: 200, cy: 60, x1: 360, y1: 130 };
+    const LOWER = { x0: 40, y0: 130, cx: 200, cy: 192, x1: 360, y1: 130 };
+    const bez = (t, a, b, c) => (1 - t) * (1 - t) * a + 2 * (1 - t) * t * b + t * t * c;
+    const bezD = (t, a, b, c) => 2 * (1 - t) * (b - a) + 2 * t * (c - b);
+    const f = (n) => n.toFixed(1);
+
+    // Точка на кривой и единичная нормаль (dir = 1 — вверх от верхнего века, -1 — вниз)
+    function onCurve(c, t, dir) {
+      const x = bez(t, c.x0, c.cx, c.x1), y = bez(t, c.y0, c.cy, c.y1);
+      const dx = bezD(t, c.x0, c.cx, c.x1), dy = bezD(t, c.y0, c.cy, c.y1);
+      const len = Math.hypot(dx, dy);
+      return { x, y, nx: (dy / len) * dir, ny: (-dx / len) * dir };
+    }
+
+    function lashes() {
+      const out = [];
+      const count = 30;
+      for (let i = 0; i < count; i++) {
+        const t = 0.06 + (0.9 * i) / (count - 1);
+        const p = onCurve(UPPER, t, 1);
+        // длиннее к середине и внешнему уголку, с лёгкой неровностью как у настоящих ресниц
+        const L = 18 + 34 * Math.sin(Math.PI * (0.1 + 0.8 * t)) + 12 * t + (i % 2 ? -4 : 3);
+        const side = 0.35 + 1.2 * (t - 0.45); // загиб: все чуть к виску, у внешнего уголка сильнее
+        const qx = p.x + p.nx * L * 0.75 - side * L * 0.08, qy = p.y + p.ny * L * 0.75;
+        const ex = p.x + p.nx * L * 0.8 + side * L * 0.65, ey = p.y + p.ny * L * 0.82;
+        out.push(`<path class="lash" d="M${f(p.x)} ${f(p.y)} Q${f(qx)} ${f(qy)} ${f(ex)} ${f(ey)}" style="animation-delay:${(0.7 + i * 0.045).toFixed(2)}s"/>`);
+      }
+      for (let i = 0; i < 9; i++) {
+        const t = 0.32 + (0.55 * i) / 8;
+        const p = onCurve(LOWER, t, -1);
+        const L = 8 + 6 * Math.sin(Math.PI * t);
+        out.push(`<path class="lash lash--low" d="M${f(p.x)} ${f(p.y)} L${f(p.x + p.nx * L + 3 * (t - 0.4))} ${f(p.y + p.ny * L)}" style="animation-delay:${(1.9 + i * 0.04).toFixed(2)}s"/>`);
+      }
+      return out.join('');
+    }
+
+    function buildEye(svg) {
+      svg.innerHTML = `
+        <path class="brow" d="M70 58 C130 14 236 -2 340 34"/>
+        <g class="blinker">
+          <path class="white" d="M40 130 Q200 60 360 130 Q200 192 40 130 Z"/>
+          <g clip-path="url(#eyeClip)">
+            <g class="iris-group">
+              <circle class="iris" cx="200" cy="128" r="44"/>
+              <circle cx="200" cy="128" r="44" fill="none" stroke="#3a2418" stroke-width="2.5" opacity=".55"/>
+              <circle cx="200" cy="128" r="30" fill="none" stroke="#e2b98c" stroke-width="1" opacity=".5"/>
+              <circle class="pupil" cx="200" cy="128" r="17"/>
+              <circle class="glint" cx="215" cy="113" r="7"/>
+              <circle class="glint" cx="188" cy="140" r="3" opacity=".6"/>
+            </g>
+          </g>
+          <path class="lid" d="M40 130 Q200 60 360 130 L384 112"/>
+          <path class="lid lid--low" d="M40 130 Q200 192 360 130"/>
+          ${lashes()}
+        </g>`;
+    }
+    document.querySelectorAll('[data-eye]').forEach(buildEye);
+
+    // Радужка на первом экране следит за курсором
+    const heroEye = document.querySelector('[data-hero-eye]');
+    const heroIris = heroEye.querySelector('.iris-group');
+    window.addEventListener('pointermove', (e) => {
+      const r = heroEye.getBoundingClientRect();
+      const dx = (e.clientX - (r.left + r.width / 2)) / innerWidth;
+      const dy = (e.clientY - (r.top + r.height / 2)) / innerHeight;
+      heroIris.style.transform = `translate(${(dx * 34).toFixed(1)}px, ${(dy * 14).toFixed(1)}px)`;
+    }, { passive: true });
+
+    // ---------- Вступление ----------
+    const intro = document.getElementById('intro');
+    const root = document.documentElement;
+    const logoEl = intro.querySelector('[data-letters]');
+    logoEl.innerHTML = [...logoEl.dataset.letters].map((ch, i) => `<span style="animation-delay:${(2.1 + i * 0.09).toFixed(2)}s">${ch}</span>`).join('');
+
+    function startHeroEye() {
+      heroEye.classList.remove('is-waiting');
+      heroEye.classList.add('is-drawing');
+    }
+    function endIntro() {
+      if (!root.classList.contains('intro-on')) return;
+      try { sessionStorage.setItem('tvorim-intro', '1'); } catch (e) {}
+      intro.classList.add('is-leaving');
+      setTimeout(() => { root.classList.remove('intro-on'); startHeroEye(); }, 850);
+    }
+    if (root.classList.contains('intro-on')) {
+      setTimeout(endIntro, 4300);
+      intro.querySelector('[data-skip]').addEventListener('click', endIntro);
+    } else {
+      startHeroEye();
+    }
+
+    // ---------- Шапка, уведомления, ссылки ----------
+    const header = document.getElementById('header');
+    const onScroll = () => header.classList.toggle('is-scrolled', window.scrollY > 20);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    const toastEl = document.querySelector('[data-toast]');
+    let toastTimer;
+    function toast(message) {
+      toastEl.textContent = message;
+      toastEl.classList.add('is-visible');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove('is-visible'), 3500);
+    }
+
+    // Ссылки меню, логотип и «Наверх»: прокрутка к разделу без перехода по адресу
+    document.querySelectorAll('a[href^="#"]').forEach((link) => link.addEventListener('click', (e) => {
+      const id = link.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if (!target) return;
+      e.preventDefault();
+      const top = id === 'top' ? 0 : target.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top, behavior: reduceMotion ? 'auto' : 'smooth' });
+    }));
+
+    function formatPhone(d) {
+      let v = '+7';
+      if (d.length > 1) v += ' (' + d.slice(1, 4);
+      if (d.length > 4) v += ') ' + d.slice(4, 7);
+      if (d.length > 7) v += '-' + d.slice(7, 9);
+      if (d.length > 9) v += '-' + d.slice(9, 11);
+      return v;
+    }
+
+    // «Позвонить» на компьютере: звонить не с чего, поэтому копируем номер и показываем его
+    const canCall = matchMedia('(hover: none), (pointer: coarse)').matches;
+    document.querySelectorAll('a[href^="tel:"]').forEach((link) => link.addEventListener('click', (e) => {
+      if (canCall) return;
+      e.preventDefault();
+      const number = formatPhone(link.getAttribute('href').replace(/\D/g, ''));
+      navigator.clipboard?.writeText(number).catch(() => {});
+      toast(`Номер ${number} скопирован`);
+    }));
+
+    // ---------- Плавное появление ----------
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-visible'); io.unobserve(e.target); } });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+
+    // ---------- Карусель ----------
+    const track = document.querySelector('[data-track]');
+    const slides = [...track.children];
+    const prev = document.querySelector('[data-prev]');
+    const next = document.querySelector('[data-next]');
+    const count = document.querySelector('[data-count]');
+    const progress = document.querySelector('[data-progress]');
+    const pad = (n) => String(n).padStart(2, '0');
+    const step = () => slides[1].offsetLeft - slides[0].offsetLeft;
+    const visible = () => Math.max(1, Math.round(track.clientWidth / step()));
+
+    function update() {
+      const max = track.scrollWidth - track.clientWidth;
+      const index = Math.round(track.scrollLeft / step());
+      const first = Math.min(index + 1, slides.length);
+      const last = Math.min(index + visible(), slides.length);
+      count.textContent = `${pad(first)}${last > first ? '–' + pad(last) : ''} / ${pad(slides.length)}`;
+      prev.disabled = track.scrollLeft <= 2;
+      next.disabled = track.scrollLeft >= max - 2;
+      const share = Math.min(1, visible() / slides.length);
+      progress.style.width = `${share * 100}%`;
+      progress.style.transform = `translateX(${max > 0 ? (track.scrollLeft / max) * ((1 - share) / share) * 100 : 0}%)`;
+    }
+    prev.addEventListener('click', () => track.scrollBy({ left: -step() }));
+    next.addEventListener('click', () => track.scrollBy({ left: step() }));
+    track.addEventListener('scroll', () => requestAnimationFrame(update), { passive: true });
+    window.addEventListener('resize', update);
+    update();
+
+    let startX = 0, startScroll = 0, dragging = false, moved = false;
+    track.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      dragging = true; moved = false; startX = e.clientX; startScroll = track.scrollLeft;
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      if (Math.abs(dx) > 4) { moved = true; track.classList.add('is-dragging'); }
+      if (moved) track.scrollLeft = startScroll - dx;
+    });
+    window.addEventListener('pointerup', () => {
+      if (!dragging) return;
+      dragging = false;
+      if (moved) {
+        track.classList.remove('is-dragging');
+        track.scrollTo({ left: Math.round(track.scrollLeft / step()) * step() });
+      }
+    });
+
+    // ---------- Запись: услуги, время, заявка ----------
+    const TELEGRAM = 'tvorim_studio';   // Telegram студии, без @
+    const WHATSAPP = '79135065333';     // WhatsApp студии, только цифры
+    const TICK = '<span class="tick" aria-hidden="true">'
+      + '<svg class="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>'
+      + '<svg class="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
+
+    const services = [...document.querySelectorAll('[data-service]')].map((el) => ({
+      id: el.dataset.service,
+      name: el.dataset.name,
+      price: Number(el.dataset.price),
+    }));
+    const picked = new Set();
+    const rub = (n) => n.toLocaleString('ru-RU') + ' ₽';
+    const plural = (n, forms) => forms[n % 10 === 1 && n % 100 !== 11 ? 0 : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 1 : 2];
+
+    document.querySelectorAll('.add').forEach((b) => { b.innerHTML = TICK; });
+    document.querySelector('[data-picks]').innerHTML = services.map((s) => `
+      <li><button type="button" class="pick" data-add="${s.id}" aria-pressed="false">
+        <span class="pick__name">${s.name}</span>
+        <span class="pick__price">${rub(s.price)}</span>
+        ${TICK}
+      </button></li>`).join('');
+
+    const modal = document.getElementById('book');
+    const box = modal.querySelector('.modal__box');
+    const form = modal.querySelector('.booking');
+    const errorEl = form.querySelector('[data-error]');
+    const cart = document.querySelector('[data-cart]');
+
+    // Свободное время. Студия работает с 11:00 до 21:00, запись каждые 2 часа (последняя — 19:00–21:00).
+    const OPEN_HOUR = 11;
+    const CLOSE_HOUR = 21;
+    const SLOT_HOURS = 2;
+    const DAYS_AHEAD = 14;
+    // Занятое время по дням. Пока пусто — всё свободно. Позже сюда можно подставлять
+    // данные из таблицы администратора, например: { '2026-11-21': ['13:00', '17:00'] }
+    const BUSY = {};
+
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const dayKey = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    const hourText = (h) => `${pad2(h)}:00`;
+    const slot = { day: null, hour: null };
+
+    function freeHours(date) {
+      const now = new Date();
+      const isToday = dayKey(date) === dayKey(now);
+      const busy = BUSY[dayKey(date)] || [];
+      const hours = [];
+      for (let h = OPEN_HOUR; h + SLOT_HOURS <= CLOSE_HOUR; h += SLOT_HOURS) {
+        // сегодня показываем только время, до которого осталось больше часа
+        if (isToday && h * 60 <= now.getHours() * 60 + now.getMinutes() + 60) continue;
+        if (!busy.includes(hourText(h))) hours.push(h);
+      }
+      return hours;
+    }
+
+    function bookingDays() {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      return Array.from({ length: DAYS_AHEAD }, (_, i) => {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        return d;
+      }).filter((d) => freeHours(d).length);
+    }
+
+    const daysEl = form.querySelector('[data-days]');
+    const timesEl = form.querySelector('[data-times]');
+
+    function renderDays() {
+      const days = bookingDays();
+      if (!days.some((d) => dayKey(d) === slot.day)) { slot.day = days[0] ? dayKey(days[0]) : null; slot.hour = null; }
+      const today = dayKey(new Date());
+      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+      daysEl.innerHTML = days.map((d) => {
+        const key = dayKey(d);
+        const top = key === today ? 'Сегодня' : key === dayKey(tomorrow) ? 'Завтра'
+          : d.toLocaleDateString('ru-RU', { weekday: 'short' }).replace(/^./, (c) => c.toUpperCase());
+        const month = d.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '');
+        return `<button type="button" class="day" data-day="${key}" aria-pressed="${key === slot.day}">${top}<b>${d.getDate()}</b>${month}</button>`;
+      }).join('');
+      renderTimes();
+    }
+
+    function renderTimes() {
+      daysEl.querySelectorAll('[data-day]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.day === slot.day));
+      if (!slot.day) { timesEl.innerHTML = '<p class="times__empty">Свободного времени пока нет — позвоните нам.</p>'; return; }
+      const hours = freeHours(new Date(slot.day + 'T00:00'));
+      timesEl.innerHTML = hours.map((h) => `
+        <button type="button" class="time" data-hour="${h}" aria-pressed="${h === slot.hour}">
+          <b>${hourText(h)} – ${hourText(h + SLOT_HOURS)}</b><span>${h === slot.hour ? 'выбрано' : 'свободно'}</span>
+        </button>`).join('');
+    }
+
+    const slotText = () => {
+      const d = new Date(slot.day + 'T00:00');
+      return `${d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}, ${hourText(slot.hour)}–${hourText(slot.hour + SLOT_HOURS)}`;
+    };
+
+    form.addEventListener('click', (e) => {
+      const day = e.target.closest('[data-day]');
+      const hour = e.target.closest('[data-hour]');
+      if (day) { slot.day = day.dataset.day; slot.hour = null; renderTimes(); }
+      if (hour) { slot.hour = Number(hour.dataset.hour); renderTimes(); errorEl.textContent = ''; }
+    });
+
+    function summary() {
+      const list = services.filter((s) => picked.has(s.id));
+      return { list, label: rub(list.reduce((acc, s) => acc + s.price, 0)) };
+    }
+
+    function render() {
+      document.querySelectorAll('[data-add]').forEach((b) => b.setAttribute('aria-pressed', picked.has(b.dataset.add)));
+      const { list, label } = summary();
+      form.querySelector('[data-total]').textContent = list.length ? label : '—';
+      cart.querySelector('[data-cart-count]').textContent = `${list.length} ${plural(list.length, ['услуга', 'услуги', 'услуг'])}`;
+      cart.querySelector('[data-cart-total]').textContent = label;
+      cart.classList.toggle('is-visible', list.length > 0 && !modal.classList.contains('is-open'));
+    }
+
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-add]');
+      if (!btn) return;
+      const id = btn.dataset.add;
+      picked.has(id) ? picked.delete(id) : picked.add(id);
+      if (picked.size) errorEl.textContent = '';
+      render();
+    });
+
+    // Маска телефона: +7 (999) 123-45-67
+    const phone = form.elements.phone;
+    const digits = () => phone.value.replace(/\D/g, '');
+    phone.addEventListener('input', () => {
+      let d = digits();
+      if (!d) { phone.value = ''; return; }
+      if (d[0] === '8') d = '7' + d.slice(1);
+      if (d[0] !== '7') d = '7' + d;
+      phone.value = formatPhone(d.slice(0, 11));
+    });
+    form.addEventListener('input', (e) => e.target.closest('.field')?.classList.remove('is-invalid'));
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const channel = e.submitter?.dataset.channel || 'whatsapp';
+      const { list, label } = summary();
+      const name = form.elements.client.value.trim();
+      const comment = form.elements.comment.value.trim();
+      const invalid = (field) => form.querySelector(`[data-field="${field}"]`).classList.add('is-invalid');
+
+      let error = '';
+      if (digits().length !== 11) { invalid('phone'); error = 'Проверьте номер телефона.'; }
+      if (!name) { invalid('name'); error = 'Укажите, как к вам обращаться.'; }
+      if (slot.hour === null) error = 'Выберите дату и свободное время.';
+      if (!list.length) error = 'Выберите хотя бы одну процедуру — нажмите «+».';
+      errorEl.textContent = error;
+      if (error) return;
+
+      const text = [
+        'Здравствуйте! Хочу записаться в Tvorim.',
+        '',
+        'Процедуры:',
+        ...list.map((s) => `• ${s.name} — ${rub(s.price)}`),
+        `Итого: ${label}`,
+        '',
+        `Дата и время: ${slotText()}`,
+        `Имя: ${name}`,
+        `Телефон: ${phone.value}`,
+        comment ? `Комментарий: ${comment}` : null,
+      ].filter((line) => line !== null).join('\n');
+
+      const url = channel === 'telegram'
+        ? `https://t.me/${TELEGRAM}?text=${encodeURIComponent(text)}`
+        : `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(text)}`;
+      navigator.clipboard?.writeText(text).catch(() => {});
+      // Открываем чат обычной ссылкой — так её пропускают блокировщики всплывающих окон.
+      // Если браузер всё же не откроет, на следующем экране есть кнопка «Открыть чат».
+      const chatLink = box.querySelector('[data-chat-again]');
+      chatLink.href = url;
+      chatLink.textContent = channel === 'telegram' ? 'Открыть Telegram' : 'Открыть WhatsApp';
+      chatLink.click();
+      box.classList.add('is-done');
+      box.scrollTop = 0;
+    });
+
+    const open = () => { modal.classList.add('is-open'); document.body.style.overflow = 'hidden'; renderDays(); render(); };
+    const close = () => {
+      modal.classList.remove('is-open');
+      document.body.style.overflow = '';
+      if (box.classList.contains('is-done')) {
+        // заявка отправлена — начинаем с чистого листа
+        setTimeout(() => { box.classList.remove('is-done'); form.reset(); errorEl.textContent = ''; }, 500);
+        picked.clear();
+        slot.day = null;
+        slot.hour = null;
+      }
+      render();
+    };
+    document.querySelectorAll('[data-book]').forEach((b) => b.addEventListener('click', open));
+    modal.addEventListener('click', (e) => { if (e.target === modal || e.target.closest('[data-close]')) close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.classList.contains('is-open')) close(); });
+    render();
+  </script>
+</body>
+</html>
