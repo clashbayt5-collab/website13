@@ -125,6 +125,10 @@
     .nav a:hover { color: var(--ink); }
     .nav a:hover::after { transform: scaleX(1); }
     .header__cta { padding: 11px 24px; font-size: 14px; }
+    .menu-btn { display: none; width: 44px; height: 44px; margin-left: auto; margin-right: 8px; border: 0; background: none; color: var(--ink); cursor: pointer; place-items: center; }
+    .menu-btn svg { width: 24px; height: 24px; stroke: currentColor; stroke-width: 1.5; fill: none; }
+    .menu-btn .x, .header.is-menu .menu-btn .bars { display: none; }
+    .header.is-menu .menu-btn .x { display: inline; }
 
     /* ---------- Первый экран ---------- */
     .hero { padding: 130px 0 clamp(70px, 10vw, 110px); min-height: 100vh; display: flex; align-items: center; --veil: linear-gradient(100deg, rgba(251, 248, 243, .96) 35%, rgba(251, 248, 243, .82)); }
@@ -329,7 +333,12 @@
 
     /* ---------- Адаптив ---------- */
     @media (max-width: 960px) {
-      .nav { display: none; }
+      .menu-btn { display: grid; }
+      .header.is-menu { background: rgba(251, 248, 243, .97); border-color: var(--line); }
+      .nav { display: none; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; gap: 0; padding: 8px 24px 20px; background: rgba(251, 248, 243, .97); border-bottom: 1px solid var(--line); font-size: 18px; }
+      .header.is-menu .nav { display: flex; }
+      .nav a { padding: 14px 0; border-bottom: 1px solid var(--line); color: var(--ink); }
+      .nav a::after { display: none; }
       .hero__grid, .price__grid, .about__grid, .contacts__card, .ba-section__grid { grid-template-columns: 1fr; }
       .hero { min-height: auto; }
       .hero__art { max-width: 420px; order: -1; }
@@ -400,7 +409,7 @@
   <header class="header" id="header">
     <div class="container header__inner">
       <a href="#top" class="logo" aria-label="Барбершоп Сибирь — на главную">Сибирь</a>
-      <nav class="nav" aria-label="Разделы">
+      <nav class="nav" id="site-nav" aria-label="Разделы">
         <a href="#works">Работы</a>
         <a href="#together">Вдвоём</a>
         <a href="#price">Цены</a>
@@ -408,6 +417,10 @@
         <a href="#reviews">Отзывы</a>
         <a href="#contacts">Контакты</a>
       </nav>
+      <button class="menu-btn" type="button" aria-label="Меню" aria-expanded="false" aria-controls="site-nav" data-menu>
+        <svg class="bars" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
       <button class="btn btn--ghost header__cta" type="button" data-book>Записаться</button>
     </div>
   </header>
@@ -783,6 +796,16 @@
     const onScroll = () => header.classList.toggle('is-scrolled', window.scrollY > 20);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
+
+    // Меню на телефоне: открывается кнопкой, закрывается по ссылке, Escape или нажатию вне меню
+    const menuBtn = document.querySelector('[data-menu]');
+    const setMenu = (open) => { header.classList.toggle('is-menu', open); menuBtn.setAttribute('aria-expanded', open); };
+    menuBtn.addEventListener('click', () => setMenu(!header.classList.contains('is-menu')));
+    header.querySelectorAll('.nav a').forEach((a) => a.addEventListener('click', () => setMenu(false)));
+    document.addEventListener('click', (e) => { if (!e.target.closest('[data-menu], #site-nav')) setMenu(false); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && header.classList.contains('is-menu')) { setMenu(false); menuBtn.focus(); }
+    });
 
     const toastEl = document.querySelector('[data-toast]');
     let toastTimer;
